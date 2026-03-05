@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 import asyncio
 from winsdk.windows.devices.geolocation import Geolocator
 load_dotenv()
+import time
+
+ALERT_COOLDOWN = 60  
+last_alert_time = 0
 sender_email = os.getenv("SENDER_EMAIL")
 app_password = os.getenv("APP_PASSWORD")
 
@@ -152,36 +156,36 @@ def start_location_tracking():
 
 
 def action_layer(decision, report):
-    print("im reaching here")
-    action = decision.get("action")
 
-    if action == "LOG":
+    global last_alert_time
 
-        print("\nNormal monitoring")
+    tools = decision.get("tools", [])
 
-    elif action == "MONITOR":
+    for tool in tools:
 
-        print("\n⚠ Suspicious situation")
+        if tool == "log_event":
+            log_event(report)
 
-        start_recording()
-        start_location_tracking()
+        elif tool == "start_recording":
+            start_recording()
 
-    elif action == "ALERT":
+        elif tool == "trigger_alarm":
+            trigger_alarm()
 
-        print("\n🚨 DANGER DETECTED")
+        elif tool == "flash_light":
+            flash_light()
 
-        location = send_emergency_alert(report)
+        elif tool == "start_location_tracking":
+            start_location_tracking()
 
-        audio = get_recent_audio()
+        elif tool == "send_emergency_alert":
 
-        if audio:
-            print(f"📎 Sending audio clip: {audio}")
+            if time.time() - last_alert_time < ALERT_COOLDOWN:
+                print("⚠ Alert already sent recently. Skipping.")
+                continue
 
-        start_location_tracking()
+            last_alert_time = time.time()
+            send_emergency_alert(report)
 
-        deterrence_voice()
-        trigger_alarm()
-        flash_light()
-
-    else:
-        print("Unknown action")
+        else:
+            print("Unknown tool:", tool)

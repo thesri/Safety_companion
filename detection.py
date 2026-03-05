@@ -12,6 +12,8 @@ import threading
 from queuem import analysis_queue
 import os
 from action import action_layer
+from context_memory import add_to_context, get_context, add_risk
+from context_agent import context_reasoning
 def save_conversation(text):
 
     os.makedirs("memory", exist_ok=True)
@@ -20,22 +22,22 @@ def save_conversation(text):
         f.write(text + "\n")
         f.flush()
 
-def query_phi3(prompt: str) -> str:
-    try:
-        result = subprocess.run(
-            ["ollama", "run", "phi3", prompt],
-            capture_output=True,
-            text=True,
-            encoding='utf-8', 
-            errors='ignore',
-            timeout=20
-        )
-        return result.stdout.strip()
-    except Exception:
-        return None
+# def query_phi3(prompt: str) -> str:
+#     try:
+#         result = subprocess.run(
+#             ["ollama", "run", "phi3", prompt],
+#             capture_output=True,
+#             text=True,
+#             encoding='utf-8', 
+#             errors='ignore',
+#             timeout=20
+#         )
+#         return result.stdout.strip()
+#     except Exception:
+#         return None
 
-def ollama_available():
-    return shutil.which("ollama") is not None
+# def ollama_available():
+#     return shutil.which("ollama") is not None
 
 model_id = "SamLowe/roberta-base-go_emotions-onnx"
 
@@ -216,41 +218,52 @@ def build_report(text,emotions,stress,keywords):
     return report
 
 def offline_brain(report):
+
     risk = report.get("riskscore", 0)
 
     if risk >= 4.5:
-        return {"risk_level": "HIGH", "action": "ALERT"}
-    elif risk > 3:
-        return {"risk_level": "MEDIUM", "action": "MONITOR"}
-    else:
-        return {"risk_level": "LOW", "action": "ALLOW"}
+        return {
+            "risk_level": "DANGER",
+            "tools": [
+                "send_emergency_alert",
+                "trigger_alarm",
+                "flash_light",
+                "start_location_tracking"
+            ]
+        }
 
-def online_brain(report):
+    # fallback if agent fails
+    return {
+        "risk_level": "SAFE",
+        "tools": ["log_event"]
+    }
 
-    prompt = f"""
-        You are a safety AI.
+# def online_brain(report):
 
-        Analyze the situation and respond ONLY in JSON.
+#     prompt = f"""
+#         You are a safety AI.
 
-        Report:
-        {report}
+#         Analyze the situation and respond ONLY in JSON.
 
-        Format:
-        {{
-        "risk_level": "SAFE | SUSPICIOUS | DANGER",
-        "action": "LOG | MONITOR | ALERT",
-        "reason": "short explanation"
-        }}
-        """
-    response = query_phi3(prompt)
+#         Report:
+#         {report}
 
-    if not response:
-        return offline_brain(report)
+#         Format:
+#         {{
+#         "risk_level": "SAFE | SUSPICIOUS | DANGER",
+#         "action": "LOG | MONITOR | ALERT",
+#         "reason": "short explanation"
+#         }}
+#         """
+#     response = query_phi3(prompt)
 
-    try:
-        return json.loads(response)
-    except:
-        return {"raw_llm_output": response}
+#     if not response:
+#         return offline_brain(report)
+
+#     try:
+#         return json.loads(response)
+#     except:
+#         return {"raw_llm_output": response}
 
 def agent_brain(report):
     risk = report["riskscore"]
@@ -258,8 +271,11 @@ def agent_brain(report):
     if risk >= 4.5:
         return offline_brain(report)
 
-    if ollama_available():
-        return online_brain(report)
+    context = get_context()
+    agent_result = context_reasoning(context, report)
+
+    if agent_result:
+        return agent_result
 
     return offline_brain(report)
 
@@ -302,13 +318,17 @@ def ai_worker():
         if text is None:
             break
         
+        #add_risk(result["risk_score"])
+        
         print("\n[Worker received]:", text)
         save_conversation(text)
         result = analyze_texts(text)
+        
         print("\n AI Result")
         print(json.dumps(result,indent=2))
         decision = result["agent_decision"]
         report = result["report"]
+        add_to_context(report)
         action_layer(decision, report)
         analysis_queue.task_done()
 
