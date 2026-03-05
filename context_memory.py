@@ -1,7 +1,4 @@
 from collections import deque
-
-# store last 6 sentences
-# context_buffer = deque(maxlen=6)
 risk_history = deque(maxlen=6)
 from datetime import datetime
 

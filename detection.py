@@ -22,23 +22,6 @@ def save_conversation(text):
         f.write(text + "\n")
         f.flush()
 
-# def query_phi3(prompt: str) -> str:
-#     try:
-#         result = subprocess.run(
-#             ["ollama", "run", "phi3", prompt],
-#             capture_output=True,
-#             text=True,
-#             encoding='utf-8', 
-#             errors='ignore',
-#             timeout=20
-#         )
-#         return result.stdout.strip()
-#     except Exception:
-#         return None
-
-# def ollama_available():
-#     return shutil.which("ollama") is not None
-
 model_id = "SamLowe/roberta-base-go_emotions-onnx"
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -238,33 +221,6 @@ def offline_brain(report):
         "tools": ["log_event"]
     }
 
-# def online_brain(report):
-
-#     prompt = f"""
-#         You are a safety AI.
-
-#         Analyze the situation and respond ONLY in JSON.
-
-#         Report:
-#         {report}
-
-#         Format:
-#         {{
-#         "risk_level": "SAFE | SUSPICIOUS | DANGER",
-#         "action": "LOG | MONITOR | ALERT",
-#         "reason": "short explanation"
-#         }}
-#         """
-#     response = query_phi3(prompt)
-
-#     if not response:
-#         return offline_brain(report)
-
-#     try:
-#         return json.loads(response)
-#     except:
-#         return {"raw_llm_output": response}
-
 def agent_brain(report):
     risk = report["riskscore"]
     print("risk<=4.5 using llm")
@@ -317,8 +273,6 @@ def ai_worker():
 
         if text is None:
             break
-        
-        #add_risk(result["risk_score"])
         
         print("\n[Worker received]:", text)
         save_conversation(text)
