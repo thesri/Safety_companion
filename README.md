@@ -1,0 +1,1 @@
+Safety Companion AI is a hybrid agentic safety monitoring system that combines rule-based risk scoring with LLM contextual reasoning to detect escalating threats and autonomously trigger protective actions.
