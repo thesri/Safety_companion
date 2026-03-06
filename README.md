@@ -21,7 +21,7 @@ Potential risks identified during development:
 • LLM hallucination during context reasoning  
 • Speech-to-text errors affecting risk analysis  
 • Latency in local LLM processing
-Mitigation:
+  # Mitigation:
 • Deterministic risk rules
 • Tool restrictions based on risk score
 • Context validation before escalation
