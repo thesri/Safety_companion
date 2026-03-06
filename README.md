@@ -25,12 +25,12 @@ Potential risks identified during development:
 • Deterministic risk rules
 • Tool restrictions based on risk score
 • Context validation before escalation
-### Quick start
-• 1.Clone the repository 
-• 2.Install dependencies 
-• 3.Install and run the local LLM
+  # Quick start
+ 1.Clone the repository 
+ 2.Install dependencies 
+ 3.Install and run the local LLM
     ollama pull phi3 
-• Start the Safety Companion
+ 4.Start the Safety Companion
 python listener.py 
 And the wake word to use is "chikki" :)
 
